@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PureMembershipProvider", "PureMembershipProvider\PureMembershipProvider.csproj", "{F6608F9E-6CEA-4B86-9FBA-AA8278A8F330}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PureMPTests", "PureMPTests\PureMPTests.csproj", "{3BF94691-F76C-462E-AE42-2B914E23D07A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C6887BB4-2676-4E4D-B0C2-CF5BC0D7E2E5}"
+	ProjectSection(SolutionItems) = preProject
+		db_script.sql = db_script.sql
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F6608F9E-6CEA-4B86-9FBA-AA8278A8F330}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6608F9E-6CEA-4B86-9FBA-AA8278A8F330}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6608F9E-6CEA-4B86-9FBA-AA8278A8F330}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6608F9E-6CEA-4B86-9FBA-AA8278A8F330}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BF94691-F76C-462E-AE42-2B914E23D07A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BF94691-F76C-462E-AE42-2B914E23D07A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BF94691-F76C-462E-AE42-2B914E23D07A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BF94691-F76C-462E-AE42-2B914E23D07A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
