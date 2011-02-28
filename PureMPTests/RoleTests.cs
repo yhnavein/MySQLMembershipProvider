@@ -11,6 +11,8 @@ namespace PureDev.Common
     public class RoleTests
     {
         PureMembershipProvider mp;
+        SqlMembershipProvider smp;
+        SqlRoleProvider srp;
         RoleProvider rp;
         const string specialUN = "malinek";
         const string specialRN = "malinkowaRola";
@@ -20,19 +22,33 @@ namespace PureDev.Common
         public void Init()
         {
             mp = (PureMembershipProvider) Membership.Providers["PureMembershipProvider"];
+            smp = (SqlMembershipProvider)Membership.Providers["CustomSqlMembershipProvider"];
+
             rp = Roles.Providers["PureRoleProvider"];
+            srp = (SqlRoleProvider)Roles.Providers["CustomSqlRoleProvider"];
+        }
+
+        private static void CreateSpecialRole(RoleProvider roleProvider)
+        {
+            if (!roleProvider.RoleExists(specialRN))
+            {
+                roleProvider.CreateRole(specialRN);
+                Assert.IsTrue(roleProvider.RoleExists(specialRN));
+            }
+            else
+                Assert.Pass("Special role is already created!");
         }
 
         [Test]
         public void CreateSpecialRoleTest()
         {
-            if (!rp.RoleExists(specialRN))
-            {
-                rp.CreateRole(specialRN);
-                Assert.IsTrue(rp.RoleExists(specialRN));
-            }
-            else
-                Assert.Pass("Special role is already created!");
+            CreateSpecialRole(rp);
+        }
+
+        [Test]
+        public void CreateSpecialMSSQLRoleTest()
+        {
+            CreateSpecialRole(srp);
         }
 
         [Test]
@@ -120,6 +136,34 @@ namespace PureDev.Common
             Assert.AreEqual(rp.GetUsersInRole(roles.Last()).Length, 0);
             for (int i = 0; i < PERF_COUNT; i++)
                 rp.DeleteRole(roles[i], false);
+            Console.WriteLine("Removing created roles and assignes took {0}", (DateTime.Now - now));
+        }
+
+        [Test]
+        public void PerformanceMSSQLRoleTest()
+        {
+            int all;
+            const int PERF_COUNT = 20;
+            var users = smp.GetAllUsers(0, 10, out all);
+            var usrStr = users.Cast<MembershipUser>().Select(p => p.UserName);
+            var roles = new List<string>(PERF_COUNT);
+            var now = DateTime.Now;
+            for (int i = 0; i < PERF_COUNT; i++)
+            {
+                string roleName = Guid.NewGuid().ToString().Replace("-", "");
+                srp.CreateRole(roleName);
+                roles.Add(roleName);
+            }
+            Console.WriteLine("Creating {0} roles took {1}", PERF_COUNT, (DateTime.Now - now));
+            now = DateTime.Now;
+            srp.AddUsersToRoles(usrStr.ToArray(), roles.ToArray());
+            Assert.AreEqual(srp.GetUsersInRole(roles.Last()).Length, users.Count);
+            Console.WriteLine("Assigning {0} roles to {1} users operations took {2}", PERF_COUNT, users.Count, (DateTime.Now - now));
+            now = DateTime.Now;
+            srp.RemoveUsersFromRoles(usrStr.ToArray(), roles.ToArray());
+            Assert.AreEqual(srp.GetUsersInRole(roles.Last()).Length, 0);
+            for (int i = 0; i < PERF_COUNT; i++)
+                srp.DeleteRole(roles[i], false);
             Console.WriteLine("Removing created roles and assignes took {0}", (DateTime.Now - now));
         }
 
@@ -226,5 +270,6 @@ namespace PureDev.Common
             foreach (var userName in userNames)
                 mp.DeleteUser(userName, false);
         }
+
     }
 }

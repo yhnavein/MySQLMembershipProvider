@@ -9,7 +9,7 @@ using MySql.Data.MySqlClient;
 
 namespace PureDev.Common
 {
-    public sealed class PureMembershipProvider : MembershipProvider
+    public sealed class PureMembershipProvider : MembershipProvider, IDisposable
     {
         #region Queries
 
@@ -635,6 +635,15 @@ VALUES ( ?userName, ?password, ?email, NOW(), ?approved, NULL, NULL, NULL, 0, NU
 
         #endregion
 
+
+        #region IDisposable Members
+
+        public void Dispose()
+        {
+            _helper.Dispose();
+        }
+
+        #endregion
     }
 }
 

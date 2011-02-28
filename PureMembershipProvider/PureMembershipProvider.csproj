@@ -8,7 +8,7 @@
     <ProjectGuid>{F6608F9E-6CEA-4B86-9FBA-AA8278A8F330}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PureMembershipProvider</RootNamespace>
+    <RootNamespace>PureDev.Common</RootNamespace>
     <AssemblyName>PureMembershipProvider</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

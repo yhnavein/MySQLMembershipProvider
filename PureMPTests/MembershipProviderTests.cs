@@ -8,6 +8,7 @@ namespace PureDev.Common
     public class MembershipProviderTests
     {
         PureMembershipProvider mp;
+        SqlMembershipProvider smp;
         const string domain = "puredev.eu";
         const string specialUN = "malinek";
         const string specialPSW = "malinkapralinka";
@@ -15,8 +16,16 @@ namespace PureDev.Common
         [TestFixtureSetUp]
         public void Init()
         {
-            mp = (PureMembershipProvider) Membership.Providers["PureMembershipProvider"];
-            CreateSpecialUser();
+            try
+            {
+                mp = (PureMembershipProvider)Membership.Providers["PureMembershipProvider"];
+                smp = (SqlMembershipProvider)Membership.Providers["CustomSqlMembershipProvider"];
+                CreateSpecialUser();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message + Environment.NewLine + ex.StackTrace);
+            }
         }
 
         [Test]
@@ -90,6 +99,18 @@ namespace PureDev.Common
         }
 
         [Test]
+        public void TestMSSQLLoginInPerformance()
+        {
+            DateTime now = DateTime.Now;
+            for (int i = 0; i < 1000; i++)
+            {
+                var logged = smp.ValidateUser(specialUN + "ss", specialPSW);
+                Assert.IsFalse(logged);
+            }
+            Console.WriteLine("{0} login attempts took {1}", 1000, (DateTime.Now - now));
+        }
+
+        [Test]
         public void Test10LoginWrongPsw()
         {
             MembershipUser user = mp.GetUser(specialUN, false);
@@ -107,7 +128,6 @@ namespace PureDev.Common
                 }
             }
             Assert.Fail("User hasn't been locked after {0} failed tries", mp.MaxInvalidPasswordAttempts + 5);
-
         }
 
         [Test]

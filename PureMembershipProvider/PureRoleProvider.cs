@@ -9,21 +9,18 @@ using MySql.Data.MySqlClient;
 
 namespace PureDev.Common
 {
-  public sealed   class PureRoleProvider : RoleProvider
+  public sealed class PureRoleProvider : RoleProvider, IDisposable
     {
         private MembershipHelper _helper;
 
         private ConnectionStringSettings pConnectionStringSettings;
         private string connectionString;
 
+        private static List<string> _rolesTemp;
+
 
         public override void Initialize(string name, NameValueCollection config)
         {
-
-            //
-            // Initialize values from web.config.
-            //
-
             if (config == null)
                 throw new ArgumentNullException("config");
 
@@ -119,8 +116,7 @@ namespace PureDev.Common
         //
         // RoleProvider.CreateRole
         //
-
-        public override void CreateRole(string rolename)
+        public void CreateRole1(string rolename)
         {
             if (rolename.Contains(","))
                 throw new ArgumentException("Role names cannot contain commas.");
@@ -132,6 +128,21 @@ namespace PureDev.Common
 
             var parameters = new[] { new MySqlParameter("?name", rolename) };
             _helper.ExecuteOdbcQuery("INSERT INTO `Roles` (`name`) VALUES ( ?name ); ", parameters);
+        }
+
+        public override void CreateRole(string rolename)
+        {
+            DateTime now = DateTime.Now;
+            if (rolename.Contains(","))
+                throw new ArgumentException("Role names cannot contain commas.");
+
+            if (RoleExists(rolename))
+            {
+                throw new ProviderException("Role name already exists.");
+            }
+
+            _helper.ExecuteOdbcQuery("CALL `create_role` ('" + MySqlHelper.DoubleQuoteString(rolename) + "');");
+            Console.WriteLine("Role {0} added in {1}", rolename, (DateTime.Now - now));
         }
 
 
@@ -285,10 +296,16 @@ JOIN `Roles` R ON (R.`id_role` = UR.`id_role`)  WHERE U.`userName` IN (" + userN
         // RoleProvider.RoleExists
         //
 
-        public override bool RoleExists(string rolename)
+        public bool RoleExists1(string rolename)
         {
             var parameters = new[] { new MySqlParameter("?name", rolename) };
             var obj = _helper.ExecuteOdbcScalar("SELECT COUNT(*) FROM `Roles` WHERE `name` = ?name; ", parameters);
+            return obj != DBNull.Value ? Convert.ToInt32(obj) > 0 : false;
+        }
+
+        public override bool RoleExists(string rolename)
+        {
+            var obj = _helper.ExecuteOdbcScalar("CALL `role_exists` ('" + rolename + "'); ");
             return obj != DBNull.Value ? Convert.ToInt32(obj) > 0 : false;
         }
 
@@ -315,5 +332,11 @@ JOIN `Roles` R ON (R.`id_role` = UR.`id_role`)  WHERE U.`userName` IN (" + userN
 
             return collection.ToArray();
         }
+
+      public void Dispose()
+      {
+          _helper.Dispose();
+          
+      }
     }
 }
