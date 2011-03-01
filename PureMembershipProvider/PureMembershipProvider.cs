@@ -11,27 +11,6 @@ namespace PureDev.Common
 {
     public sealed class PureMembershipProvider : MembershipProvider, IDisposable
     {
-        #region Queries
-
-        private const string SQL_CreateUser = @"
-INSERT INTO `users`
-(`userName`,
-`password`,
-`email`,
-`creationDate`,
-`approved`,
-`lastPasswordChangedDate`,
-`lastLoginDate`,
-`lastActivityDate`,
-`locked`,
-`lastLockedDate`,
-`failedPswAttemptCount`,
-`failedPswAttemptsStart`)
-VALUES ( ?userName, ?password, ?email, NOW(), ?approved, NULL, NULL, NULL, 0, NULL, NULL, NULL );";
-
-
-        #endregion
-
         #region Fields
 
         private const int newPasswordLength = 8;
@@ -56,10 +35,6 @@ VALUES ( ?userName, ?password, ?email, NOW(), ?approved, NULL, NULL, NULL, 0, NU
         }
 
         #endregion
-
-        //
-        // System.Configuration.Provider.ProviderBase.Initialize Method
-        //
 
         public override void Initialize(string name, NameValueCollection config)
         {
@@ -102,10 +77,6 @@ VALUES ( ?userName, ?password, ?email, NOW(), ?approved, NULL, NULL, NULL, 0, NU
 
             _helper = new MembershipHelper(ConnectionStringSettings.ConnectionString);
         }
-
-        //
-        // System.Web.Security.MembershipProvider properties.
-        //
 
         #region Properties
 
@@ -228,13 +199,9 @@ VALUES ( ?userName, ?password, ?email, NOW(), ?approved, NULL, NULL, NULL, 0, NU
             var u = GetUser(username, false);
             if (u == null)
             {
-                var parameters = new[] {
-                                         new MySqlParameter("?userName", username),
-                                         new MySqlParameter("?password", EncodePassword(password)),
-                                         new MySqlParameter("?email", email),
-                                         new MySqlParameter("?approved", isApproved)
-                                     };
-                int recAdded = _helper.ExecuteOdbcQuery(SQL_CreateUser, parameters);
+                int recAdded = _helper.ExecuteOdbcQuery(
+                    string.Format("CALL `create_user`('{0}', '{1}', '{2}', '{3}');",
+                    MySqlHelper.EscapeString(username), MySqlHelper.EscapeString(EncodePassword(password)), MySqlHelper.EscapeString(email), isApproved ? "1" : "0"));
                 status = recAdded > 0 ? MembershipCreateStatus.Success : MembershipCreateStatus.UserRejected;
 
                 return GetUser(username, false);

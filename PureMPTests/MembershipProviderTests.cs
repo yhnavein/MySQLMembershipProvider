@@ -1,25 +1,28 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Web.Security;
 using NUnit.Framework;
 
+
 namespace PureDev.Common
 {
+
     [TestFixture]
     public class MembershipProviderTests
     {
-        PureMembershipProvider mp;
-        SqlMembershipProvider smp;
+        MembershipProvider mp;
         const string domain = "puredev.eu";
         const string specialUN = "malinek";
         const string specialPSW = "malinkapralinka";
+
+        protected string ProviderName = "PureMembershipProvider";
 
         [TestFixtureSetUp]
         public void Init()
         {
             try
             {
-                mp = (PureMembershipProvider)Membership.Providers["PureMembershipProvider"];
-                smp = (SqlMembershipProvider)Membership.Providers["CustomSqlMembershipProvider"];
+                mp = Membership.Providers[ProviderName];
                 CreateSpecialUser();
             }
             catch(Exception ex)
@@ -93,18 +96,6 @@ namespace PureDev.Common
             for (int i = 0; i < 1000; i++)
             {
                 var logged = mp.ValidateUser(specialUN + "ss", specialPSW);
-                Assert.IsFalse(logged);
-            }
-            Console.WriteLine("{0} login attempts took {1}", 1000, (DateTime.Now - now));
-        }
-
-        [Test]
-        public void TestMSSQLLoginInPerformance()
-        {
-            DateTime now = DateTime.Now;
-            for (int i = 0; i < 1000; i++)
-            {
-                var logged = smp.ValidateUser(specialUN + "ss", specialPSW);
                 Assert.IsFalse(logged);
             }
             Console.WriteLine("{0} login attempts took {1}", 1000, (DateTime.Now - now));
@@ -193,6 +184,28 @@ namespace PureDev.Common
 
             Assert.IsTrue(mp.DeleteUser(user, true));
             Assert.IsNull(mp.GetUser(user, false));
+        }
+
+        [Test]
+        public void HeavyCreatingUsersTest()
+        {
+            const int PERF_COUNT = 500;
+            var users = new List<string>(PERF_COUNT);
+            DateTime now = DateTime.Now;
+            for (int i = 0; i < PERF_COUNT; i++)
+            {
+                string userName = Guid.NewGuid().ToString().Replace("-", "");
+                MembershipCreateStatus mcs;
+                mp.CreateUser(userName, "", userName + "@puredevb.eu", "", "", true, "", out mcs );
+                users.Add(userName);
+            }
+            Console.WriteLine("Creating {0} users took {1}", PERF_COUNT, (DateTime.Now - now));
+            now = DateTime.Now;
+            for (int i = 0; i < PERF_COUNT; i++)
+            {
+                mp.DeleteUser(users[i], true);
+            }
+            Console.WriteLine("Deleting {0} users took {1}", PERF_COUNT, (DateTime.Now - now));
         }
 
         [Test]

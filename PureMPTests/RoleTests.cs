@@ -13,7 +13,7 @@ namespace PureDev.Common
         PureMembershipProvider mp;
         SqlMembershipProvider smp;
         SqlRoleProvider srp;
-        RoleProvider rp;
+        PureRoleProvider rp;
         const string specialUN = "malinek";
         const string specialRN = "malinkowaRola";
         const string specialRN1 = "malinkowaRola1";
@@ -24,7 +24,7 @@ namespace PureDev.Common
             mp = (PureMembershipProvider) Membership.Providers["PureMembershipProvider"];
             smp = (SqlMembershipProvider)Membership.Providers["CustomSqlMembershipProvider"];
 
-            rp = Roles.Providers["PureRoleProvider"];
+            rp = (PureRoleProvider)Roles.Providers["PureRoleProvider"];
             srp = (SqlRoleProvider)Roles.Providers["CustomSqlRoleProvider"];
         }
 
@@ -71,7 +71,7 @@ namespace PureDev.Common
                 rp.CreateRole(specialRN);
                 Assert.Fail("Role provider let creating duplicate role!");
             }
-            catch (ProviderException ex)
+            catch (ProviderException)
             {
                 Assert.Pass("Role provider throws exception on duplicated role");
             }
@@ -261,9 +261,12 @@ namespace PureDev.Common
             var userNames = new[] { "zaza123", "zaza321", "zqqa123" };
             foreach (var userName in userNames)
                 mp.CreateUser(userName, "qwerty123", userName + "@gmail.com", true);
-
+            DateTime now = DateTime.Now;
             rp.AddUsersToRoles(userNames, new[] { specialRN1 });
+            Console.WriteLine("Adding {1} users to roles took: {0}", (DateTime.Now - now), userNames.Length);
+            now = DateTime.Now;
             var found = rp.FindUsersInRole(specialRN1, "zaza");
+            Console.WriteLine("Finding all users within role took: {0}", (DateTime.Now - now));
             Assert.AreEqual(found.Length, 2);
             Assert.IsFalse(found.Contains("zqqa123"));
 
@@ -271,5 +274,54 @@ namespace PureDev.Common
                 mp.DeleteUser(userName, false);
         }
 
+        [Test]
+        public void FindRolesForUserTest1()
+        {
+            const int PERF_COUNT = 40;
+            var roles = new List<string>(PERF_COUNT);
+            mp.CreateUser(specialUN, "qwerty123", specialUN + "@gmail.com", true);
+            for (int i = 0; i < PERF_COUNT; i++)
+            {
+                string roleName = Guid.NewGuid().ToString().Replace("-", "");
+                rp.CreateRole(roleName);
+                roles.Add(roleName);
+            }
+
+            DateTime now = DateTime.Now;
+            rp.AddUsersToRoles(new[] { specialUN }, roles.ToArray());
+            Console.WriteLine("Assigning user to {0} roles took: {1}", PERF_COUNT, (DateTime.Now - now));
+            now = DateTime.Now;
+
+            var rolesForUser = rp.GetRolesForUser(specialUN);
+            Console.WriteLine("Finding all roles assigned to user took: {0}", (DateTime.Now - now));
+
+            Assert.AreEqual(roles.Count, rolesForUser.Length);
+            mp.DeleteUser(specialUN, true);
+        }
+
+        [Test]
+        public void FindRolesForUserTest2()
+        {
+            const int PERF_COUNT = 40;
+            var roles = new List<string>(PERF_COUNT);
+            mp.CreateUser(specialUN, "qwerty123", specialUN + "@gmail.com", true);
+            for (int i = 0; i < PERF_COUNT; i++)
+            {
+                string roleName = Guid.NewGuid().ToString().Replace("-", "");
+                rp.CreateRole(roleName);
+                roles.Add(roleName);
+            }
+
+            DateTime now = DateTime.Now;
+            rp.AddUsersToRoles(new[] { specialUN }, roles.ToArray());
+            Console.WriteLine("Assigning user to {0} roles took: {1}", PERF_COUNT, (DateTime.Now - now));
+            now = DateTime.Now;
+
+            var rolesForUser = rp.OldGetRolesForUser(specialUN);
+            Console.WriteLine("Finding all roles assigned to user took: {0}", (DateTime.Now - now));
+
+            Assert.AreEqual(roles.Count, rolesForUser.Length);
+            mp.DeleteUser(specialUN, true);
+        }
     }
 }
