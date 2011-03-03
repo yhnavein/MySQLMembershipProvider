@@ -35,8 +35,7 @@ namespace PureDev.Common
         public void CreateSpecialUser()
         {
             string user = specialUN;
-            MembershipCreateStatus status;
-            var muser = mp.CreateUser(user, specialPSW, user + "@" + domain, null, null, true, null, out status);
+            var muser = CreateUser(user, specialPSW, user + "@" + domain, true);
             if (muser == null)
             {
                 muser = mp.GetUser(user, false);
@@ -51,8 +50,7 @@ namespace PureDev.Common
         public void TestCreatingUsers()
         {
             string user = Guid.NewGuid().ToString().Substring(0, 12);
-            MembershipCreateStatus status;
-            var muser = mp.CreateUser(user, "lalagugu1", user + "@" + domain, null, null, true, null, out status);
+            var muser = CreateUser(user, "lalagugu1", user + "@" + domain, true);
             Assert.IsNotNull(muser);
             Assert.AreEqual(muser.Email, user + "@" + domain);
             Assert.AreEqual(muser.UserName, user);
@@ -63,6 +61,9 @@ namespace PureDev.Common
         [Test]
         public void TestLoginSucc()
         {
+            if (mp.GetUser(specialUN, false) == null)
+                CreateSpecialUser();
+
             var logged = mp.ValidateUser(specialUN, specialPSW);
             Assert.IsTrue(logged);
 
@@ -71,7 +72,6 @@ namespace PureDev.Common
             Assert.AreEqual(user.LastLoginDate.Date, DateTime.Today, "Last login date is wrong!");
             Assert.AreEqual(user.LastLoginDate.Hour, DateTime.Now.Hour, "Last login hour is wrong!");
             Assert.AreEqual(user.LastLoginDate.Minute, DateTime.Now.Minute, "Last login Minute is wrong!");
-            Assert.AreEqual(user.LastLoginDate.Second, DateTime.Now.Second, "Last login Second is wrong!");
         }
 
         [Test]
@@ -104,7 +104,7 @@ namespace PureDev.Common
         [Test]
         public void Test10LoginWrongPsw()
         {
-            MembershipUser user = mp.GetUser(specialUN, false);
+            var user = mp.GetUser(specialUN, false);
             Assert.IsNotNull(user);
             for(int i=0;i<mp.MaxInvalidPasswordAttempts + 5;i++)
             {
@@ -137,8 +137,11 @@ namespace PureDev.Common
         [Test]
         public void TestGetUsersByEmail()
         {
+            var user = mp.GetUser(specialUN, false);
+            if(user == null)
+                CreateSpecialUser();
             int lala;
-            var users = mp.FindUsersByEmail(specialUN, 0, 10, out lala);
+            var users = mp.FindUsersByEmail(specialUN + "@" + domain, 0, 10, out lala);
             Assert.IsTrue(users.Count > 0);
             Assert.AreEqual(lala, users.Count);
         }
@@ -172,8 +175,7 @@ namespace PureDev.Common
         public void TestCreatingUsers2()
         {
             string user = Guid.NewGuid().ToString().Substring(0, 12);
-            MembershipCreateStatus status;
-            var muser = mp.CreateUser(user, "lalagugu1", user + "@" + domain, null, null, true, null, out status);
+            var muser = CreateUser(user, "lalagugu1", user + "@" + domain, true);
             Assert.IsNotNull(muser);
             Assert.AreEqual(muser.Email, user + "@" + domain);
             Assert.AreEqual(muser.UserName, user);
@@ -186,6 +188,15 @@ namespace PureDev.Common
             Assert.IsNull(mp.GetUser(user, false));
         }
 
+
+        private MembershipUser CreateUser(string userName, string psw, string email, bool approved)
+        {
+            MembershipCreateStatus mcp;
+            var user = mp.CreateUser(userName, psw, email, "Frącwa", "Kuźmielińska", true, Guid.NewGuid(), out mcp);
+            Console.WriteLine("Creating user result: {0}", mcp.ToString() );
+            return user;
+        }
+
         [Test]
         public void HeavyCreatingUsersTest()
         {
@@ -195,8 +206,7 @@ namespace PureDev.Common
             for (int i = 0; i < PERF_COUNT; i++)
             {
                 string userName = Guid.NewGuid().ToString().Replace("-", "");
-                MembershipCreateStatus mcs;
-                mp.CreateUser(userName, "", userName + "@puredevb.eu", "", "", true, "", out mcs );
+                CreateUser(userName, "", userName + "@" + "@puredevb.eu", true);
                 users.Add(userName);
             }
             Console.WriteLine("Creating {0} users took {1}", PERF_COUNT, (DateTime.Now - now));

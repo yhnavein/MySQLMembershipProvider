@@ -54,4 +54,54 @@ namespace PureMPTests
             Console.WriteLine("All tests for MySQL took {0}", DateTime.Now - _startedDate); ;
         }
     }
+
+    [TestFixture]
+    public class PureRPMySQLTests : RoleTests
+    {
+        private DateTime _startedDate;
+
+        public PureRPMySQLTests()
+        {
+            MPName = "PureMembershipProvider"; ;
+            RPName = "PureRoleProvider";
+        }
+
+        [TestFixtureSetUp]
+        public new void Init()
+        {
+            base.Init();
+            _startedDate = DateTime.Now;
+        }
+
+        [TestFixtureTearDown]
+        public new void TearDown()
+        {
+            Console.WriteLine("All tests for MySQL took {0}", DateTime.Now - _startedDate); ;
+        }
+    }
+
+    [TestFixture]
+    public class PureRPMSSQLTests : RoleTests
+    {
+        private DateTime _startedDate;
+
+        public PureRPMSSQLTests()
+        {
+            MPName = "CustomSqlMembershipProvider"; ;
+            RPName = "CustomSqlRoleProvider";
+        }
+
+        [TestFixtureSetUp]
+        public new void Init()
+        {
+            base.Init();
+            _startedDate = DateTime.Now;
+        }
+
+        [TestFixtureTearDown]
+        public new void TearDown()
+        {
+            Console.WriteLine("All tests for MySQL took {0}", DateTime.Now - _startedDate); ;
+        }
+    }
 }
