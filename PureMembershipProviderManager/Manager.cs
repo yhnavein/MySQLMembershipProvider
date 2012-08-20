@@ -1,12 +1,22 @@
 ﻿using System;
+using System.Web.Security;
 using PureDev.Common;
 
 namespace PureMembershipProviderManager
 {
     public class Manager
     {
-        private PureMembershipProvider _mp = new PureMembershipProvider();
-        private PureRoleProvider _rp = new PureRoleProvider();
+        private PureMembershipProvider _mp;
+        private RoleProvider _rp;
+
+        protected const string MPProviderName = "PureMembershipProvider";
+        protected const string RPName = "PureRoleProvider";
+
+        public Manager()
+        {
+            _mp = (PureMembershipProvider)Membership.Providers[MPProviderName];
+            //_rp = Roles.Providers[RPName];
+        }
 
         public void ParseCommand(string command)
         {
@@ -48,10 +58,10 @@ namespace PureMembershipProviderManager
                 case "list":
                     switch (commandParts[1].ToLower())
                     {
-                        case "role":
+                        case "roles":
                             ListRoles();
                             break;
-                        case "user":
+                        case "users":
                             ListUsers();
                             break;
                     }
@@ -65,14 +75,21 @@ namespace PureMembershipProviderManager
 
         private void ListUsers()
         {
+            Console.WriteLine("List of all users");
+            int userCount = 0;
+            var userCollection = _mp.GetAllUsers(0, 100, out userCount);
+            int i = 1;
+            foreach (MembershipUser user in userCollection)
+            {
+                Console.WriteLine("{0,3} {1,10} {2,10}", i++, user.UserName, user.Email);
+            }
         }
 
         private void CreateUser(string name)
         {
-            Console.WriteLine("Enter password for user {0}:", name);
+            Console.WriteLine("Creating user {0}:", name);
             Console.Write("Password:");
             string password = Console.ReadLine().Trim();
-            Console.WriteLine("Enter email for user {0}:", name);
             Console.Write("E-mail:");
             string email = Console.ReadLine().Trim();
 

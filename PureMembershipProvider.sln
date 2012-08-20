@@ -1,14 +1,14 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PureMembershipProvider", "PureMembershipProvider\PureMembershipProvider.csproj", "{F6608F9E-6CEA-4B86-9FBA-AA8278A8F330}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PureMPTests", "PureMPTests\PureMPTests.csproj", "{3BF94691-F76C-462E-AE42-2B914E23D07A}"
-EndProject
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C6887BB4-2676-4E4D-B0C2-CF5BC0D7E2E5}"
 	ProjectSection(SolutionItems) = preProject
 		db_script.sql = db_script.sql
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PureMembershipProvider", "PureMembershipProvider\PureMembershipProvider.csproj", "{F6608F9E-6CEA-4B86-9FBA-AA8278A8F330}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PureMPTests", "PureMPTests\PureMPTests.csproj", "{3BF94691-F76C-462E-AE42-2B914E23D07A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PureMembershipProviderManager", "PureMembershipProviderManager\PureMembershipProviderManager.csproj", "{CDE4BD33-3E9E-458C-80D6-559EA6B7CF1A}"
 EndProject

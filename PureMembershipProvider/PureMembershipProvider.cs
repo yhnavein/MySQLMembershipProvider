@@ -1,16 +1,36 @@
 ﻿using System;
-using System.Text;
-using System.Web.Security;
-using System.Configuration.Provider;
 using System.Collections.Specialized;
 using System.Configuration;
+using System.Configuration.Provider;
 using System.Security.Cryptography;
+using System.Text;
+using System.Web.Security;
 using MySql.Data.MySqlClient;
 
 namespace PureDev.Common
 {
-    public sealed class PureMembershipProvider : MembershipProvider, IDisposable
+    public sealed class PureMembershipProvider : MembershipProvider
     {
+        #region Queries
+
+        private const string SQL_CreateUser = @"
+INSERT INTO `users`
+(`userName`,
+`password`,
+`email`,
+`creationDate`,
+`approved`,
+`lastPasswordChangedDate`,
+`lastLoginDate`,
+`lastActivityDate`,
+`locked`,
+`lastLockedDate`,
+`failedPswAttemptCount`,
+`failedPswAttemptsStart`)
+VALUES ( ?userName, ?password, ?email, NOW(), ?approved, NULL, NULL, NULL, 0, NULL, NULL, NULL );";
+
+        #endregion Queries
+
         #region Fields
 
         private const int newPasswordLength = 8;
@@ -34,7 +54,11 @@ namespace PureDev.Common
             _helper = new MembershipHelper(ConnectionStringSettings.ConnectionString);
         }
 
-        #endregion
+        #endregion Fields
+
+        //
+        // System.Configuration.Provider.ProviderBase.Initialize Method
+        //
 
         public override void Initialize(string name, NameValueCollection config)
         {
@@ -50,7 +74,7 @@ namespace PureDev.Common
 
             // Initialize the abstract base class.
             base.Initialize(name, config);
-            
+
             pMaxInvalidPasswordAttempts = Convert.ToInt32(GetConfigValue(config["maxInvalidPasswordAttempts"], "5"));
             pPasswordAttemptWindow = Convert.ToInt32(GetConfigValue(config["passwordAttemptWindow"], "10"));
             pMinRequiredNonAlphanumericCharacters = Convert.ToInt32(GetConfigValue(config["minRequiredNonAlphanumericCharacters"], "1"));
@@ -61,9 +85,9 @@ namespace PureDev.Common
             SecretHashKey = Encoding.Unicode.GetBytes(ConfigurationManager.AppSettings["SecretHashKey"]);
 
             string temp_format = config["passwordFormat"] ?? "Hashed";
-            if(temp_format != "Hashed")
+            if (temp_format != "Hashed")
                 throw new ProviderException("Password format not supported. Only hash with special salt is supported! Choose 'Hashed'.");
-            
+
             //
             // Initialize OdbcConnection.
             //
@@ -77,6 +101,10 @@ namespace PureDev.Common
 
             _helper = new MembershipHelper(ConnectionStringSettings.ConnectionString);
         }
+
+        //
+        // System.Web.Security.MembershipProvider properties.
+        //
 
         #region Properties
 
@@ -94,7 +122,6 @@ namespace PureDev.Common
             get { return false; }
         }
 
-
         public override bool RequiresUniqueEmail
         {
             get { return pRequiresUniqueEmail; }
@@ -111,12 +138,10 @@ namespace PureDev.Common
             get { return pMaxInvalidPasswordAttempts; }
         }
 
-
         public override int PasswordAttemptWindow
         {
             get { return pPasswordAttemptWindow; }
         }
-
 
         public override MembershipPasswordFormat PasswordFormat
         {
@@ -144,7 +169,7 @@ namespace PureDev.Common
             get { return pPasswordStrengthRegularExpression; }
         }
 
-        #endregion
+        #endregion Properties
 
         public override bool ChangePassword(string username, string oldPwd, string newPwd)
         {
@@ -199,9 +224,13 @@ namespace PureDev.Common
             var u = GetUser(username, false);
             if (u == null)
             {
-                int recAdded = _helper.ExecuteOdbcQuery(
-                    string.Format("CALL `create_user`('{0}', '{1}', '{2}', '{3}');",
-                    MySqlHelper.EscapeString(username), MySqlHelper.EscapeString(EncodePassword(password)), MySqlHelper.EscapeString(email), isApproved ? "1" : "0"));
+                var parameters = new[] {
+                                         new MySqlParameter("?userName", username),
+                                         new MySqlParameter("?password", EncodePassword(password)),
+                                         new MySqlParameter("?email", email),
+                                         new MySqlParameter("?approved", isApproved)
+                                     };
+                int recAdded = _helper.ExecuteOdbcQuery(SQL_CreateUser, parameters);
                 status = recAdded > 0 ? MembershipCreateStatus.Success : MembershipCreateStatus.UserRejected;
 
                 return GetUser(username, false);
@@ -226,15 +255,12 @@ namespace PureDev.Common
 
             int rowsAffected = _helper.ExecuteOdbcQuery("DELETE FROM `Users` WHERE `userName` = ?userName;", parameters);
 
-            if(deleteAllRelatedData )
+            if (deleteAllRelatedData)
             {
-                
             }
 
             return rowsAffected > 0;
         }
-
-
 
         //
         // MembershipProvider.GetAllUsers
@@ -242,8 +268,8 @@ namespace PureDev.Common
 
         public override MembershipUserCollection GetAllUsers(int pageIndex, int pageSize, out int totalRecords)
         {
-            var parameters = new[] { 
-                new MySqlParameter("?offset", pageSize * pageIndex), 
+            var parameters = new[] {
+                new MySqlParameter("?offset", pageSize * pageIndex),
                 new MySqlParameter("?count", pageSize) };
             var collection = new MembershipUserCollection();
             int totalUsers;
@@ -260,14 +286,12 @@ namespace PureDev.Common
             return collection;
         }
 
-
         //
         // MembershipProvider.GetNumberOfUsersOnline
         //
 
         public override int GetNumberOfUsersOnline()
         {
-
             var onlineSpan = new TimeSpan(0, Membership.UserIsOnlineTimeWindow, 0);
             DateTime compareTime = DateTime.Now.Subtract(onlineSpan);
 
@@ -306,10 +330,9 @@ namespace PureDev.Common
                 }
             };
             _helper.ExecuteMySqlReader2("SELECT * FROM `Users` WHERE `userName` = ?userName;", parameters, cnt);
-            
+
             return u;
         }
-
 
         //
         // MembershipProvider.GetUser(object, bool)
@@ -349,7 +372,6 @@ namespace PureDev.Common
             return _helper.ExecuteOdbcQuery("UPDATE `Users` SET `lastLockedDate` = NOW(), `locked` = '0', `failedPswAttemptCount` = '0' WHERE `userName` = ?userName;",
                                                      parameters) > 0;
         }
-
 
         //
         // MembershipProvider.GetUserNameByEmail
@@ -399,7 +421,7 @@ namespace PureDev.Common
             _helper.ExecuteMySqlReader2("SELECT `locked` FROM `Users` WHERE `userName` = ?userName;", parameters, cnt);
 
             parameters = new[] { new MySqlParameter("?userName", username), new MySqlParameter("?psw", EncodePassword(newPassword)) };
-            int rowsAffected = _helper.ExecuteOdbcQuery("UPDATE `Users` SET `password` = ?psw, `lastPasswordChangedDate` = NOW() WHERE `userName` = ?userName;", parameters); 
+            int rowsAffected = _helper.ExecuteOdbcQuery("UPDATE `Users` SET `password` = ?psw, `lastPasswordChangedDate` = NOW() WHERE `userName` = ?userName;", parameters);
 
             if (rowsAffected > 0)
             {
@@ -407,7 +429,6 @@ namespace PureDev.Common
             }
             throw new MembershipPasswordException("User not found, or user is locked out. Password not Reset.");
         }
-
 
         //
         // MembershipProvider.UpdateUser
@@ -423,7 +444,6 @@ namespace PureDev.Common
 
             _helper.ExecuteOdbcQuery("UPDATE Users SET `email` = ?email, `approved` = ?approved WHERE `userName` = ?username; ", parameters);
         }
-
 
         //
         // MembershipProvider.ValidateUser
@@ -453,12 +473,11 @@ namespace PureDev.Common
                     _helper.ExecuteOdbcQuery("UPDATE `Users` SET `lastLoginDate` = NOW() WHERE `userName` = ?userName;", parameters);
                 }
             }
-            else 
+            else
                 UpdateFailureCount(username, "password");
 
             return isValid;
         }
-
 
         //
         // MembershipProvider.FindUsersByName
@@ -466,9 +485,9 @@ namespace PureDev.Common
 
         public override MembershipUserCollection FindUsersByName(string usernameToMatch, int pageIndex, int pageSize, out int totalRecords)
         {
-            var parameters = new[] { 
-                new MySqlParameter("?valueToMatch", "%" + usernameToMatch + "%"), 
-                new MySqlParameter("?offset", pageSize * pageIndex), 
+            var parameters = new[] {
+                new MySqlParameter("?valueToMatch", "%" + usernameToMatch + "%"),
+                new MySqlParameter("?offset", pageSize * pageIndex),
                 new MySqlParameter("?count", pageSize) };
             var collection = new MembershipUserCollection();
             int totalUsers;
@@ -491,11 +510,11 @@ namespace PureDev.Common
 
         public override MembershipUserCollection FindUsersByEmail(string emailToMatch, int pageIndex, int pageSize, out int totalRecords)
         {
-            var parameters = new[] { 
-                new MySqlParameter("?emailToMatch", "%" + emailToMatch + "%"), 
-                new MySqlParameter("?offset", pageSize * pageIndex), 
+            var parameters = new[] {
+                new MySqlParameter("?emailToMatch", "%" + emailToMatch + "%"),
+                new MySqlParameter("?offset", pageSize * pageIndex),
                 new MySqlParameter("?count", pageSize) };
-            var collection = new MembershipUserCollection() ;
+            var collection = new MembershipUserCollection();
             int totalUsers;
             Action<MySqlDataReader> cnt = reader =>
             {
@@ -511,7 +530,6 @@ namespace PureDev.Common
         }
 
         #region Helpers
-
 
         private void UpdateFailureCount(string username, string failureType)
         {
@@ -559,7 +577,6 @@ namespace PureDev.Common
             }
         }
 
-
         private static MembershipUser GetUserFromReader(MySqlDataReader reader)
         {
             int id_user = reader.GetInt32("id_user");
@@ -579,7 +596,6 @@ namespace PureDev.Common
                                       lastLockedDate);
             //return new PureMembershipUser(id_user, username, email, isApproved, isLockedOut,
             //    createdDate, lastLoginDate, lastActivityDate, lastPasswordChangedDate, lastLockedDate);
-
         }
 
         private bool CheckPassword(string password, string dbpassword)
@@ -593,24 +609,11 @@ namespace PureDev.Common
             return Convert.ToBase64String(hash.ComputeHash(Encoding.Unicode.GetBytes(password)));
         }
 
-
         private static string GetConfigValue(string configValue, string defaultValue)
         {
             return String.IsNullOrEmpty(configValue) ? defaultValue : configValue;
         }
 
-
-        #endregion
-
-
-        #region IDisposable Members
-
-        public void Dispose()
-        {
-            _helper.Dispose();
-        }
-
-        #endregion
+        #endregion Helpers
     }
 }
-
